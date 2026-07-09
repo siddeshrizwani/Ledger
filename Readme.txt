@@ -1,93 +1,291 @@
-1. Create express server refer-->app.js server.js
-2. connect mongo db to server -- use mongodb atlas -- create new project , after project creation  cluster creation is to be done , remember the db user password, then select compass and copy the connection string , open the mongodb compass , new connection paste the uri u copied before and cluster is created 
-3. Cluster is ready (further db will be created inside the cluster) now we have to connect the clusteer to server -- for this we need package "mongoose" and dotenv
-4. create the .env file inside the src folder in which we will store all the secrete keys
-5. create config folder inside it create db.js file 
-6. in db.js file write the code to connect to database and export the function to use in server.js 
-7. in server.js import the db.js function and call it 
-8.  the server is connnected to the db 
-9. now we will do authentication , create end points user can register login , additional functionalities like user is registered then an introductary email is sent to the user
-10. user authentication for this we need to create user model / user schema for this we will create a models folder inside the src folder 
-11. inside the models folder create user.model.js file to create user model / user schema 
-12. user model is done now we will create api endpoints -- routes for register and login 
-13. now we will create the routes folder inside it we will create the auth.routes.js file in this we will create the authenticatiion routes one will be for user registration and anohter will be for login user 
-14. routes are created inside the routes folder inside the route files but the controllers are created in a seperate folder with seperate file for auth -- auth.controller.js
-15. in the controller file we require the user model and write a function which will register the user refer auth.controller.js
+# Backend Ledger - Transaction Management System
 
-now after registering the user we will give the user a jwt token which will keep the user logged in on the website
+## Project Overview
+A robust backend system for managing financial transactions, accounts, and ledger entries with double-entry bookkeeping principles.
 
-Core Answer: In the backend, you keep users logged in by validating the JWT on every incoming request and implementing a Refresh Token strategy so the user doesn't have to re-login when the main token expires.
-The Interview Cheat Sheet
-    1. The Request Flow (Per-Request Validation)
-    Extraction: The backend extracts the JWT from the Authorization: Bearer <token> header or an HttpOnly cookie.
+---
 
-    Verification: The backend verifies the digital signature using a secret key and checks the exp (expiration) timestamp
-    
-    Context: If valid, the backend decodes the payload (e.g., user_id) and attaches it to the request object to allow access.
+## Development Phases
 
-2. Session Persistence (Access vs. Refresh Tokens)
-    Access Token: Short-lived (e.g., 15 minutes). Used for stateless API authentication.
-    Refresh Token: Long-lived (e.g., 7 days). Stored securely on the backend database/Redis.
-    The Silent Refresh: When the access token expires, the client calls a /refresh endpoint with the refresh token. The backend validates it and issues a new short-lived access token, keeping the user logged in seamlessly
+### Phase 1: Project Setup & Configuration
+**Commit Message:** "feat: initial project setup with dependencies"
 
-for creating the token we need to install jsonwebtoken
-in auth.controller.js after creating the user we will create token , we have to use jwt.sign() , payload is given as user's id and jwt secret which will be generated online via jwt secrets website and will be stored in .env file as jwt_secret 
+Files:
+- package.json - Dependencies (express, mongoose, dotenv, jsonwebtoken, bcryptjs, nodemailer, cookie-parser)
+- .gitignore - Ignore node_modules, .env
+- .env - Environment variables (MongoDB URI, JWT Secret, Email config)
+- src/server.js - Server initialization
+- src/app.js - Express app configuration with middlewares
 
-now token is created now we have to set the token in the cookies
-for this we need package "cookie-parser" 
+---
 
-Status code 201 is used because it explicitly confirms that the request succeeded and resulted in the successful creation of a new resource (the user) on the server.
+### Phase 2: Database Connection
+**Commit Message:** "feat: add MongoDB connection configuration"
 
-now after both the routes for login and register is done , testing is also done using postman
+Files:
+- src/config/db.js - MongoDB connection logic with error handling
 
-Now we will create a functionality if a user registers then a welcome email is to be sent automatically to the user
+---
 
-for this we will use "nodemailer" , we dont have a company email address , so we will use a temp email address dont use private email address.
+### Phase 3: User Authentication - Models
+**Commit Message:** "feat: implement user model with password hashing"
 
-nodemailer gives the power to the express's server to send  mail to any particular mail id
+Files:
+- src/models/user.model.js - User schema with email validation, password hashing (bcrypt)
 
-go to ankur prajapati's repo in that search for "difference-backend-video" repo in that documnetation to integrate different technologies is provided.
+Features:
+- Email validation with regex
+- Password hashing pre-save hook
+- Password comparison method
+- Timestamps
 
-now copyt the emai.js code and create a new folder named "services" inside it create "email.service.js" paste the email.js code 
+---
 
+### Phase 4: User Authentication - Controllers & Routes
+**Commit Message:** "feat: add user registration and login endpoints"
 
-Simple Mail Transfer Protocol (SMTP): The universal web standard/protocol used to push emails across networks.
+Files:
+- src/controllers/auth.controller.js - Registration and login logic
+- src/routes/auth.routes.js - Auth routes
+- Mount routes in src/app.js
 
-A Nodemailer transporter acts as an internal HTTP-to-SMTP translator. It takes your local JavaScript email data, establishes an encrypted TCP handshake with an external SMTP server (e.g., Google's), authenticates your identity via OAuth2, and instructs that server to route the message to the recipient's email provider.
+Features:
+- User registration with duplicate email check
+- User login with password verification
+- JWT token generation
+- Cookie-based authentication
 
-after complete setup of email.service.js , come to auth.controller.js immport the exported function from email.service.js and use it after response sent in the registeration controller function
+---
 
-now we will move towards creating bank accounts model for users because one user can have multiple bank accounts  
+### Phase 5: Email Service Integration
+**Commit Message:** "feat: integrate email service for registration notifications"
 
-A ledger is basically a record of every transaction that happens. Think of it like a detailed logbook. Instead of just storing a final balance, you record every time money goes in or out. When you want to know the balance, you add up all those transactions. So, a ledger gives you a full history rather than just one number.
+Files:
+- src/services/email.service.js - Nodemailer with Gmail OAuth2
 
-now after model is created for accounts we need to create some apis which will create the accounts and which will fetch all the accounts for a particular user
+Features:
+- Welcome email on user registration
+- Gmail OAuth2 integration
+- Error handling
 
-to optimize it -- one user can have multiple accounts 
-so Indexing is used to speed up searches. By indexing the user field, the database quickly finds all accounts belonging to a specific user, making queries faster.
+---
 
-now we will create the routes for accounts and use it in app.js 
+### Phase 6: Authentication Middleware
+**Commit Message:** "feat: add JWT authentication middleware"
 
-now we have to crete the controller file account.controller.js  in that the function will be there where user will give some data and account will be created of that particular user but before this we need to immplement the middleware to check the authenticatiion status of the user 
+Files:
+- src/middlewares/auth.middleware.js
 
-role of middleware -- to check whether the user is logged in or not and any request which is coming from a particular user is a valid logged user in or not
+Features:
+- Token verification from cookies/headers
+- User validation from database
+- Error handling (expired, invalid, missing tokens)
 
-to check this the token given while the user registration controller was return we gave the user a token stored in the coookies / req.headers.authorization , so we will check the request whether there is the token present in the cookies or not , if yes then verify its right or not and if its not there then user is not logged in so no access  
+---
 
-In the auth middleware, the JWT token contains only the user ID. After verifying the token, we use the ID to fetch the full user from the database, ensuring we have complete user details. We attach this user to the request so the next steps have full access. Calling "next" then passes control to the next middleware or controller in the chain.
+### Phase 7: Account Management - Models
+**Commit Message:** "feat: implement account model with status management"
 
-now use the middleware in the account.routes.js create protected api for account creation and use the middleware in that api
+Files:
+- src/models/account.model.js
 
-now designing the account controller -- now we need to think what all things are required to create account with the help of account  
+Features:
+- User reference (one-to-many relationship)
+- Account status (ACTIVE, FROZEN, CLOSED)
+- Currency support
+- Account types (SAVINGS, CURRENT, SALARY)
+- Balance tracking
+- Compound indexes for performance
 
+---
 
-abhi banking system kaise work karta hai wo dekhenge
+### Phase 8: Account Management - Controllers & Routes
+**Commit Message:** "feat: add account creation endpoint with auth"
 
-Idempotency is a property of an operation where performing it multiple times has the same effect as performing it just once. In a banking system, for example, a transaction is idempotent if, even if the request is sent multiple times, the final result—such as the total balance—remains the same as if it had been applied only once. This ensures consistency and prevents duplicate or accidental operations.
+Files:
+- src/controllers/account.controller.js - Account creation logic
+- src/routes/account.routes.js - Account routes with auth middleware
+- Mount routes in src/app.js
 
-create a transcation maintaining the from user , to user, amount to be transferred , Idempotency key xyz which is a string and unique for a transaction , status which is kept default as pending 
+Features:
+- Protected account creation (requires authentication)
+- Default values for currency and account type
+- User association through JWT
 
-now comes the role of ledger which is like a register system like in a account what money was credited and what was debited 
-for every transaction there will be 2 ledger entries one in source account , another in destination account and in transaction the status is marked as complete
+---
 
-now we have to create a model for transaction create transaction.model.js
+### Phase 9: Transaction Model
+**Commit Message:** "feat: implement transaction model with idempotency"
+
+Files:
+- src/models/transaction.model.js
+
+Features:
+- Double-entry transaction support (fromAccount, toAccount)
+- Transaction status (PENDING, COMPLETED, FAILED, REVERSED)
+- Idempotency key for duplicate prevention
+- Amount validation
+- Compound indexes
+
+---
+
+### Phase 10: Ledger Model (Immutable)
+**Commit Message:** "feat: add immutable ledger model for audit trail"
+
+Files:
+- src/models/ledger.model.js
+
+Features:
+- Immutable ledger entries (CREDIT/DEBIT)
+- Prevention hooks for update/delete operations
+- Account and transaction references
+- Audit trail support
+
+---
+
+### Phase 11: Transaction Controller & Routes
+**Commit Message:** "feat: implement transaction creation with ledger entries"
+
+Files:
+- src/controllers/transaction.controller.js - Transaction logic
+- src/routes/transaction.routes.js - Transaction routes
+
+Features:
+- Create transactions between accounts
+- Automatic ledger entry generation (double-entry)
+- Balance validation
+- Transaction status management
+
+---
+
+## Tech Stack
+
+**Backend:**
+- Node.js
+- Express.js
+- MongoDB with Mongoose
+
+**Authentication:**
+- JWT (JSON Web Tokens)
+- bcryptjs (Password hashing)
+
+**Email:**
+- Nodemailer with Gmail OAuth2
+
+**Other:**
+- dotenv (Environment variables)
+- cookie-parser (Cookie handling)
+
+---
+
+## Project Structure
+
+```
+Backend Ledger/
+├── src/
+│   ├── config/
+│   │   └── db.js
+│   ├── controllers/
+│   │   ├── auth.controller.js
+│   │   ├── account.controller.js
+│   │   └── transaction.controller.js
+│   ├── middlewares/
+│   │   └── auth.middleware.js
+│   ├── models/
+│   │   ├── user.model.js
+│   │   ├── account.model.js
+│   │   ├── transaction.model.js
+│   │   └── ledger.model.js
+│   ├── routes/
+│   │   ├── auth.routes.js
+│   │   ├── account.routes.js
+│   │   └── transaction.routes.js
+│   ├── services/
+│   │   └── email.service.js
+│   ├── app.js
+│   └── server.js
+├── .env
+├── .gitignore
+├── package.json
+└── Readme.txt
+```
+
+---
+
+## API Endpoints
+
+### Auth Routes (`/api/auth`)
+- POST `/register` - User registration
+- POST `/login` - User login
+
+### Account Routes (`/api/accounts`) - Protected
+- POST `/` - Create account (requires auth)
+
+### Transaction Routes (`/api/transactions`) - Protected
+- POST `/` - Create transaction (requires auth)
+
+---
+
+## Environment Variables
+
+```
+MONGO_URI=mongodb://localhost:27017/backend-ledger
+JWT_SECRET=your_jwt_secret
+CLIENT_ID=your_google_oauth_client_id
+CLIENT_SECRET=your_google_oauth_client_secret
+REFRESH_TOKEN=your_google_oauth_refresh_token
+EMAIL_USER=your_email@gmail.com
+```
+
+---
+
+## Key Features
+
+1. **Secure Authentication** - JWT with httpOnly cookies
+2. **Email Notifications** - Welcome emails on registration
+3. **Account Management** - Multiple account types per user
+4. **Double-Entry Bookkeeping** - Automatic ledger entries
+5. **Idempotency** - Prevent duplicate transactions
+6. **Immutable Ledger** - Audit trail protection
+7. **Performance** - Database indexes for fast queries
+
+---
+
+## How to Run
+
+1. Install dependencies:
+   ```
+   npm install
+   ```
+
+2. Set up .env file with required variables
+
+3. Start MongoDB locally or use MongoDB Atlas
+
+4. Run development server:
+   ```
+   npm run dev
+   ```
+
+5. Server runs on `http://localhost:3000`
+
+---
+
+## Future Enhancements
+
+- Transaction history API
+- Account balance retrieval
+- Transaction reversal logic
+- Admin dashboard
+- Rate limiting
+- API documentation (Swagger)
+- Unit tests
+- CI/CD pipeline
+
+---
+
+## Author
+Siddesh Rizwani
+
+## License
+ISC

@@ -82,3 +82,12 @@ now designing the account controller -- now we need to think what all things are
 
 
 abhi banking system kaise work karta hai wo dekhenge
+
+Idempotency is a property of an operation where performing it multiple times has the same effect as performing it just once. In a banking system, for example, a transaction is idempotent if, even if the request is sent multiple times, the final result—such as the total balance—remains the same as if it had been applied only once. This ensures consistency and prevents duplicate or accidental operations.
+
+create a transcation maintaining the from user , to user, amount to be transferred , Idempotency key xyz which is a string and unique for a transaction , status which is kept default as pending 
+
+now comes the role of ledger which is like a register system like in a account what money was credited and what was debited 
+for every transaction there will be 2 ledger entries one in source account , another in destination account and in transaction the status is marked as complete
+
+now we have to create a model for transaction create transaction.model.js

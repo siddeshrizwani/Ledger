@@ -25,6 +25,13 @@ const userSchema = new mongoose.Schema({
         select:false
         // select false means whenever user data is fetched from db password wont come with it
 
+    },
+    systemUser: {
+        type: Boolean,
+        default: false,
+        immutable: true,
+        select: false
+        // internal-only flag for the system/reserve user; hidden from normal queries
     }
 },{
     timestamps:true

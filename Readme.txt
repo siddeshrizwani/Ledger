@@ -284,5 +284,5 @@ EMAIL_USER=your_email@gmail.com
 
 ---
 
-## Developer 
+## Developed by:
 Siddesh Rizwani

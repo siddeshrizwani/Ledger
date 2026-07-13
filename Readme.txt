@@ -284,8 +284,5 @@ EMAIL_USER=your_email@gmail.com
 
 ---
 
-## Author
+## Developed by:
 Siddesh Rizwani
-
-## License
-ISC

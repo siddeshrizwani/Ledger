@@ -1,4 +1,5 @@
 const mongoose = require("mongoose")
+const ledgerModel = require("./ledger.model.js");
 
 const accountSchema = new mongoose.Schema({
     user: {
@@ -26,6 +27,32 @@ const accountSchema = new mongoose.Schema({
 }, {
     timestamps: true
 })
+
+accountSchema.methods.getBalance = async function() {
+    
+    const result = await ledgerModel.aggregate([
+        {
+            $match: { account: this._id }
+        },
+        {
+            $group: {
+                _id: null,
+                balance: {
+                    $sum: {
+                        $cond: [
+                            { $eq: ["$type", "CREDIT"] },
+                            "$amount",
+                            { $multiply: ["$amount", -1] }
+                        ]
+                    }
+                }
+            }
+        }
+    ]);
+    
+    return result.length > 0 ? result[0].balance : 0;
+};
+
 // the below is the compound index example
 accountSchema.index({ user:1 , status:1})
 // Account -- this is the collection name

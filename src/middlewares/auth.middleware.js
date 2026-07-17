@@ -49,4 +49,40 @@ async function authMiddleware(req, res, next) {
     }
 }
 
-module.exports = authMiddleware; 
+/**
+ * Ensures the authenticated user is the internal system/reserve user.
+ * Must run AFTER authMiddleware (which populates req.user).
+ * systemUser is select:false, so it is re-fetched explicitly here.
+ */
+async function authSystemUserMiddleware(req, res, next) {
+    try {
+        if (!req.user) {
+            return res.status(401).json({
+                message: "Authentication required",
+                status: "failed"
+            });
+        }
+
+        const user = await userModel
+            .findById(req.user._id)
+            .select("+systemUser");
+
+        if (!user || !user.systemUser) {
+            return res.status(403).json({
+                message: "Access denied. System user only",
+                status: "failed"
+            });
+        }
+
+        next();
+
+    } catch (error) {
+        return res.status(500).json({
+            message: "Internal server error",
+            status: "failed",
+            error: error.message
+        });
+    }
+}
+
+module.exports = { authMiddleware, authSystemUserMiddleware };

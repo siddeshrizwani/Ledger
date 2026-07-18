@@ -98,3 +98,23 @@ now we have to create ledger entry model like the model of how one ledger entry 
 In Mongoose, "pre" hooks are middleware that run before certain operations—like "findOneAndUpdate" or "updateOne." These operations are ways to search and update a document. By attaching a "pre" hook, you can run custom logic before the update happens—like checking if the record can be changed, ensuring it stays consistent, or preventing certain updates. This helps you control exactly what happens to your data.
 
 now the business logic how the transaction will happen and how amount is debited from one account and credited to another account
+
+created transaction.controller.js , now the request of transaction coming from a user is a logged in user or not so to check that we will first use auth middleware on that user , so use that middleware in transaction.routes.js 
+
+now code the transaction.controller.js follow the 10 steps and in 4th step account balance is to be calculated , in the account.model.js we created a function in the schema of account --> getBalance()
+
+Aggregation: A MongoDB framework used to process multiple documents and perform operations like filtering, grouping, sorting, and calculations (SUM, COUNT, AVG, etc.).
+
+Why use it in a ledger? To calculate an account's balance directly in the database by summing incoming transactions and subtracting outgoing transactions, avoiding unnecessary data transfer and improving performance.
+
+now to trade money between 2 accounts we need to create another api which will be used to add money in one one account so that one ledger entry is there in the destination account which will have the balance to send money to another account 
+
+we have to show that the fund is transferred from system account as we deposit cash create system user and create account of that system user and then we will do transaction from that account in user model 
+
+make changes in user model added boolean that the system user --> false/true
+
+now crete the system user and its account using postman 
+
+tested the registration of user and account creation and then initial funds transferred from system user to destination account 
+
+now we have to create api -- user will login and check the current balance of the account

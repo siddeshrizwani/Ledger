@@ -66,8 +66,10 @@ async function createTransaction(req, res) {
             }
 
             if (isTransactionAlreadyExists.status === "PENDING") {
-                return res.status(200).json({
-                    message: "Transaction is still processing",
+                return res.status(202).json({
+                    message: "Transaction already initiated and is currently being processed. The amount is on its way to the receiver — please do not retry.",
+                    status: "pending",
+                    transactionId: isTransactionAlreadyExists._id
                 });
             }
 
@@ -135,6 +137,14 @@ async function createTransaction(req, res) {
         }], { session });
 
         /**
+         * Simulate real-world processing delay (e.g. inter-bank transfer).
+         * Money has left the sender (DEBIT written) but hasn't reached the
+         * receiver yet. Any duplicate request in this 5-second window will
+         * be caught by the idempotency check (status: PENDING) and blocked.
+         */
+        await new Promise(resolve => setTimeout(resolve, 5000));
+
+        /**
          * 7. Create CREDIT ledger entry
          */
 
@@ -149,13 +159,15 @@ async function createTransaction(req, res) {
          * 8. Mark transaction COMPLETED
          */
 
-        newTransaction.status = "COMPLETED";
-        await newTransaction.save({ session });
+        await transactionModel.findOneAndUpdate(
+            { _id: newTransaction._id },
+            { status: "COMPLETED" },
+            { session }
+        );
 
         /**
          * 9. Commit MongoDB session
          */
-
         await session.commitTransaction();
 
         /**
@@ -292,8 +304,10 @@ async function createInitialFundsTransaction(req, res) {
             }
 
             if (isTransactionAlreadyExists.status === "PENDING") {
-                return res.status(200).json({
-                    message: "Initial funds transaction is still processing",
+                return res.status(202).json({
+                    message: "Transaction already initiated and is currently being processed. The amount is on its way to the receiver — please do not retry.",
+                    status: "pending",
+                    transactionId: isTransactionAlreadyExists._id
                 });
             }
 
@@ -321,47 +335,46 @@ async function createInitialFundsTransaction(req, res) {
 
         /**
          * 5. Create transaction (PENDING)
-         * Constructed in memory first, then saved inside the session.
          */
         session = await mongoose.startSession();
         session.startTransaction();
 
-        const newTransaction = new transactionModel({
+        const newTransaction = (await transactionModel.create([{
             fromAccount: systemAccount._id,
             toAccount: toUserAccount._id,
             amount,
             idempotencyKey,
             status: "PENDING"
-        });
-        await newTransaction.save({ session });
+        }], { session }))[0];
 
         /**
          * 6. Create DEBIT ledger entry (system account)
          */
-        const debitEntry = new ledgerModel({
+        await ledgerModel.create([{
             account: systemAccount._id,
             amount,
             transaction: newTransaction._id,
             type: "DEBIT"
-        });
-        await debitEntry.save({ session });
+        }], { session });
 
         /**
          * 7. Create CREDIT ledger entry (destination account)
          */
-        const creditEntry = new ledgerModel({
+        await ledgerModel.create([{
             account: toUserAccount._id,
             amount,
             transaction: newTransaction._id,
             type: "CREDIT"
-        });
-        await creditEntry.save({ session });
+        }], { session });
 
         /**
          * 8. Mark transaction COMPLETED
          */
-        newTransaction.status = "COMPLETED";
-        await newTransaction.save({ session });
+        await transactionModel.findOneAndUpdate(
+            { _id: newTransaction._id },
+            { status: "COMPLETED" },
+            { session }
+        );
 
         /**
          * 9. Commit MongoDB session

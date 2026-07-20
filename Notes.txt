@@ -113,8 +113,8 @@ we have to show that the fund is transferred from system account as we deposit c
 
 make changes in user model added boolean that the system user --> false/true
 
-now crete the system user and its account using postman 
+now create the system user and its account using postman 
 
 tested the registration of user and account creation and then initial funds transferred from system user to destination account 
 
-now we have to create api -- user will login and check the current balance of the account
+now we have to create api in account.routes.js -- user will login and check the current balance of the account

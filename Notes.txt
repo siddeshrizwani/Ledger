@@ -118,3 +118,9 @@ now create the system user and its account using postman
 tested the registration of user and account creation and then initial funds transferred from system user to destination account 
 
 now we have to create api in account.routes.js -- user will login and check the current balance of the account
+
+Create api endpoint for fetching all the accounts associated to the user with their live balance
+
+now we will create accounts route for fetching balance of the particular account , whose accountId will be sent with the request as params - see it in account.routes.js and account.controllers.js
+
+now we have to transfer money between 2 users- like to see how transaction works , ledger entries 

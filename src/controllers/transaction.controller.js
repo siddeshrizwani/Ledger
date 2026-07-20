@@ -115,13 +115,13 @@ async function createTransaction(req, res) {
         session = await mongoose.startSession();
         session.startTransaction();
 
-        const newTransaction = await transactionModel.create([{
+        const newTransaction = (await transactionModel.create([{
             fromAccount,
             toAccount,
             amount,
             idempotencyKey,
             status: "PENDING"
-        }], { session });
+        }], { session }))[0];
 
         /**
          * 6. Create DEBIT ledger entry
@@ -130,7 +130,7 @@ async function createTransaction(req, res) {
         await ledgerModel.create([{
             account: fromAccount,
             amount,
-            transaction: newTransaction[0]._id,
+            transaction: newTransaction._id,
             type: "DEBIT"
         }], { session });
 
@@ -141,7 +141,7 @@ async function createTransaction(req, res) {
         await ledgerModel.create([{
             account: toAccount,
             amount,
-            transaction: newTransaction[0]._id,
+            transaction: newTransaction._id,
             type: "CREDIT"
         }], { session });
 
@@ -149,8 +149,8 @@ async function createTransaction(req, res) {
          * 8. Mark transaction COMPLETED
          */
 
-        newTransaction[0].status = "COMPLETED";
-        await newTransaction[0].save({ session });
+        newTransaction.status = "COMPLETED";
+        await newTransaction.save({ session });
 
         /**
          * 9. Commit MongoDB session
@@ -163,21 +163,21 @@ async function createTransaction(req, res) {
          */
 
         sendTransactionEmail(req.user.email, req.user.name, {
-            amount: newTransaction[0].amount,
-            fromAccount: newTransaction[0].fromAccount,
-            toAccount: newTransaction[0].toAccount,
-            status: newTransaction[0].status
+            amount: newTransaction.amount,
+            fromAccount: newTransaction.fromAccount,
+            toAccount: newTransaction.toAccount,
+            status: newTransaction.status
         }).catch(err => console.log("Email error:", err.message));
 
         return res.status(201).json({
             message: "Transaction completed successfully",
             status: "success",
             transaction: {
-                id: newTransaction[0]._id,
-                fromAccount: newTransaction[0].fromAccount,
-                toAccount: newTransaction[0].toAccount,
-                amount: newTransaction[0].amount,
-                status: newTransaction[0].status
+                id: newTransaction._id,
+                fromAccount: newTransaction.fromAccount,
+                toAccount: newTransaction.toAccount,
+                amount: newTransaction.amount,
+                status: newTransaction.status
             }
         });
 
@@ -321,43 +321,47 @@ async function createInitialFundsTransaction(req, res) {
 
         /**
          * 5. Create transaction (PENDING)
+         * Constructed in memory first, then saved inside the session.
          */
         session = await mongoose.startSession();
         session.startTransaction();
 
-        const newTransaction = await transactionModel.create([{
+        const newTransaction = new transactionModel({
             fromAccount: systemAccount._id,
             toAccount: toUserAccount._id,
             amount,
             idempotencyKey,
             status: "PENDING"
-        }], { session });
+        });
+        await newTransaction.save({ session });
 
         /**
          * 6. Create DEBIT ledger entry (system account)
          */
-        await ledgerModel.create([{
+        const debitEntry = new ledgerModel({
             account: systemAccount._id,
             amount,
-            transaction: newTransaction[0]._id,
+            transaction: newTransaction._id,
             type: "DEBIT"
-        }], { session });
+        });
+        await debitEntry.save({ session });
 
         /**
          * 7. Create CREDIT ledger entry (destination account)
          */
-        await ledgerModel.create([{
+        const creditEntry = new ledgerModel({
             account: toUserAccount._id,
             amount,
-            transaction: newTransaction[0]._id,
+            transaction: newTransaction._id,
             type: "CREDIT"
-        }], { session });
+        });
+        await creditEntry.save({ session });
 
         /**
          * 8. Mark transaction COMPLETED
          */
-        newTransaction[0].status = "COMPLETED";
-        await newTransaction[0].save({ session });
+        newTransaction.status = "COMPLETED";
+        await newTransaction.save({ session });
 
         /**
          * 9. Commit MongoDB session
@@ -368,21 +372,21 @@ async function createInitialFundsTransaction(req, res) {
          * 10. Send email notification
          */
         sendTransactionEmail(req.user.email, req.user.name, {
-            amount: newTransaction[0].amount,
-            fromAccount: newTransaction[0].fromAccount,
-            toAccount: newTransaction[0].toAccount,
-            status: newTransaction[0].status
+            amount: newTransaction.amount,
+            fromAccount: newTransaction.fromAccount,
+            toAccount: newTransaction.toAccount,
+            status: newTransaction.status
         }).catch(err => console.log("Email error:", err.message));
 
         return res.status(201).json({
             message: "Initial funds transferred successfully",
             status: "success",
             transaction: {
-                id: newTransaction[0]._id,
-                fromAccount: newTransaction[0].fromAccount,
-                toAccount: newTransaction[0].toAccount,
-                amount: newTransaction[0].amount,
-                status: newTransaction[0].status
+                id: newTransaction._id,
+                fromAccount: newTransaction.fromAccount,
+                toAccount: newTransaction.toAccount,
+                amount: newTransaction.amount,
+                status: newTransaction.status
             }
         });
 
